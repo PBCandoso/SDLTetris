@@ -5,6 +5,10 @@
 #define PLAYABLE_HEIGHT 20
 #define GRID_SIZE 30
 
+#define ARRAY_COUNT(x) (sizeof(x) / sizeof((x)[0]))
+
+const double SECONDS_PER_FRAME = 1.f / 60.f;
+
 struct Tetromino {
 	const uint8_t* data;
 	const int mSize;
@@ -64,16 +68,18 @@ struct InputState {
 	int8_t right;
 	int8_t up;
 	int8_t down;
+	int8_t btn1;
 
 	int8_t dleft;
 	int8_t dright;
 	int8_t dup;
 	int8_t ddown;
+	int8_t dbtn1;
 };
 
 struct PieceState {
 	// Type of piece
-	uint8_t tIndex = 6;
+	uint8_t tIndex;
 	int offset_row;
 	int offset_col;
 	int rotation;
@@ -87,6 +93,9 @@ struct GameState {
 	uint8_t board[WIDTH * HEIGHT];
 	PieceState pieceState;
 	GamePhase phase;
+
+	double time;
+	double next_drop_time;
 };
 
 // Get value from 1D array based on (x,y) coordinates
@@ -98,6 +107,12 @@ void xy_set(uint8_t* values, int width, int x, int y, uint8_t val);
 uint8_t tetromino_get(const Tetromino* t, int x, int y, int rotation);
 
 bool validMove(PieceState* piece,const uint8_t* board, int width, int height);
+
+void spawn_piece(GameState* game);
+
+void place_piece(GameState* game);
+
+bool drop_piece(GameState* game);
 
 void update_gameplay(GameState* gState, InputState* iState);
 

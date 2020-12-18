@@ -1,6 +1,7 @@
-#include <cstdint>
-#include "Tetris.h"
 #include <iostream>
+#include <cstdint>
+#include <cstdlib>
+#include "Tetris.h"
 
 Tetromino tetrominos[] = {
 	Tetromino(tetrominoBar,4),
@@ -35,6 +36,35 @@ uint8_t tetromino_get(const Tetromino* t, int x, int y, int rotation) {
 	return 0;
 }
 
+int random_int(int min, int max)
+{
+	int range = max - min;
+	return min + rand() % range;
+}
+
+uint8_t check_full_line(const uint8_t* board, int width, uint8_t row) {
+	for (int col = 0; col < width; ++col) {
+		if (!xy_get(board, width, row, col)) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+int get_full_lines(const uint8_t* board, int width, int height, uint8_t* lines) {
+	int count = 0;
+	for (int row = 0; row < height; ++row) {
+		uint8_t filled = check_full_line(board, width, row);
+		lines[row] = filled;
+		count += filled;
+	}
+	return count;
+}
+
+void clear_lines(uint8_t* board, int width, int height, const uint8_t* lines) {
+
+}
+
 bool validMove(PieceState* piece, const uint8_t* board, int width, int height) {
 	const Tetromino* t = tetrominos + piece->tIndex;
 	for (int row = 0; row < t->mSize; ++row) {
@@ -60,6 +90,45 @@ bool validMove(PieceState* piece, const uint8_t* board, int width, int height) {
 	return true;
 }
 
+double get_next_drop_time() {
+	return 43 * SECONDS_PER_FRAME;
+}
+
+void spawn_piece(GameState* game) {
+	game->pieceState = {};
+	game->pieceState.tIndex = (uint8_t)random_int(0, ARRAY_COUNT(tetrominos));;
+	game->pieceState.offset_col = WIDTH / 2;
+	game->next_drop_time = game->time + get_next_drop_time();
+}
+
+void place_piece(GameState* game) {
+	const Tetromino* t = tetrominos + game->pieceState.tIndex;
+	for (int row = 0; row < t->mSize; ++row) {
+		for (int col = 0; col < t->mSize; ++col) {
+			uint8_t value = tetromino_get(t, row, col, game->pieceState.rotation);
+			if (value) {
+				int board_row = game->pieceState.offset_row + row;
+				int board_col = game->pieceState.offset_col + col;
+				xy_set(game->board, WIDTH, board_row, board_col, value);
+			}
+		}
+	}
+}
+
+bool drop_piece(GameState* game) {
+	++game->pieceState.offset_row;
+	if (!validMove(&game->pieceState, game->board,WIDTH,HEIGHT)) {
+		// Colided with board, move piece back up
+		--game->pieceState.offset_row;
+		place_piece(game);
+		spawn_piece(game);
+		return false;
+	}
+	
+	game->next_drop_time = game->time + get_next_drop_time();
+	return true;
+}
+
 void update_gameplay(GameState* gState, const InputState* input) {
 	PieceState pState = gState->pieceState;
 
@@ -67,7 +136,6 @@ void update_gameplay(GameState* gState, const InputState* input) {
 		--pState.offset_col;
 	}
 	if (input->dright > 0) {
-		std::cout << pState.offset_col;
 		++pState.offset_col;
 	}
 	if (input->dup > 0) {
@@ -75,6 +143,18 @@ void update_gameplay(GameState* gState, const InputState* input) {
 	}
 	if (validMove(&pState, gState->board, WIDTH, HEIGHT)) {
 		gState->pieceState = pState;
+	}
+
+	if (input->ddown > 0) {
+		drop_piece(gState);
+	}
+
+	if (input->dbtn1 > 0) {
+		while (drop_piece(gState));
+	}
+
+	while (gState->time >= gState->next_drop_time) {
+		drop_piece(gState);
 	}
 }
 

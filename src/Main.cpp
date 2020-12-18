@@ -27,7 +27,7 @@ void draw_rect(SDL_Renderer* renderer,
 }
 
 void draw_cell(SDL_Renderer* renderer, int row, int col, uint8_t value, 
-	int offset_x, int offset_y, bool outline = false) {
+	int offset_x, int offset_y, bool outline = false, bool grid = false) {
 
 	Color base_color = BASE_COLORS[value];
 	Color light_color = LIGHT_COLORS[value];
@@ -44,11 +44,32 @@ void draw_cell(SDL_Renderer* renderer, int row, int col, uint8_t value,
 		return;
 	}
 
+	if (grid) {
+		edge /= 2;
+		draw_rect(renderer, x, y, GRID_SIZE, GRID_SIZE, GRID_OUTLINE);
+		return;
+	}
+
 	fill_rect(renderer, x, y, GRID_SIZE, GRID_SIZE, dark_color);
 	fill_rect(renderer, x + edge, y,
 		GRID_SIZE - edge, GRID_SIZE - edge, light_color);
 	fill_rect(renderer, x + edge, y + edge,
 		GRID_SIZE - edge * 2, GRID_SIZE - edge * 2, base_color);
+}
+
+void draw_board(SDL_Renderer* renderer, const uint8_t* board, int width, int height,
+	int offset_x, int offset_y) {
+	for (int row = 0; row < height; ++row) {
+		for (int col = 0; col < width; ++col) {
+			uint8_t value = xy_get(board, width, row, col);
+			if (value) {
+				draw_cell(renderer, row, col, value, offset_x, offset_y);
+			}
+			else {
+				draw_cell(renderer, row, col, offset_x,offset_y, false,true);
+			}
+		}
+	}
 }
 
 void draw_piece(SDL_Renderer* renderer, const PieceState* piece, int offset_x, int offset_y, bool outline = false) {
@@ -65,6 +86,7 @@ void draw_piece(SDL_Renderer* renderer, const PieceState* piece, int offset_x, i
 }
 
 void render_game(const GameState* gState, SDL_Renderer* renderer) {
+	draw_board(renderer, gState->board, WIDTH, HEIGHT, 0 ,0);
 	draw_piece(renderer, &gState->pieceState,0,0);
 }
 
@@ -75,7 +97,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 	*/
-	SDL_Window* window = SDL_CreateWindow("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 480, 640, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+	SDL_Window* window = SDL_CreateWindow("Tetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 480, 720, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	
 	SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
@@ -84,6 +106,9 @@ int main(int argc, char* argv[]) {
 
 	bool quit = false;
 	while (!quit) {
+
+		game.time = SDL_GetTicks() / 1000.0f;
+
 		SDL_Event e;
 		while (SDL_PollEvent(&e) != 0) {
 			if (e.type == SDL_QUIT) {
@@ -102,11 +127,13 @@ int main(int argc, char* argv[]) {
 		input.right = key_states[SDL_SCANCODE_RIGHT];
 		input.up = key_states[SDL_SCANCODE_UP];
 		input.down = key_states[SDL_SCANCODE_DOWN];
+		input.btn1 = key_states[SDL_SCANCODE_SPACE];
 
 		input.dleft = input.left - previous_input.left;
 		input.dright = input.right - previous_input.right;
 		input.dup = input.up - previous_input.up;
 		input.ddown= input.down - previous_input.down;
+		input.dbtn1 = input.btn1 - previous_input.btn1;
 
 		SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
 		SDL_RenderClear(renderer);
