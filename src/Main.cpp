@@ -73,7 +73,6 @@ void draw_board(SDL_Renderer* renderer, const uint8_t* board, int width, int hei
 }
 
 void draw_piece(SDL_Renderer* renderer, const PieceState* piece, int offset_x, int offset_y, bool outline = false) {
-	// TODO: Possible mistake getting tetrominos list
 	const Tetromino* t = tetrominos + piece->tIndex;
 	for (int row = 0; row < t->mSize; ++row) {
 		for (int col = 0; col < t->mSize; ++col) {
@@ -88,6 +87,12 @@ void draw_piece(SDL_Renderer* renderer, const PieceState* piece, int offset_x, i
 void render_game(const GameState* gState, SDL_Renderer* renderer) {
 	draw_board(renderer, gState->board, WIDTH, HEIGHT, 0 ,0);
 	draw_piece(renderer, &gState->pieceState,0,0);
+	PieceState ghost = gState->pieceState;
+	while (validMove(&ghost, gState->board, WIDTH,HEIGHT)) {
+		ghost.offset_row++;
+	}
+	ghost.offset_row--;
+	draw_piece(renderer, &ghost, 0, ghost.offset_col, true);
 }
 
 int main(int argc, char* argv[]) {

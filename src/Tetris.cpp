@@ -35,16 +35,10 @@ uint8_t tetromino_get(const Tetromino* t, int x, int y, int rotation) {
 	}
 	return 0;
 }
+ int random_int(int min, int max) { int range = max - min; return min + rand() % range; }
 
-int random_int(int min, int max)
-{
-	int range = max - min;
-	return min + rand() % range;
-}
-
-uint8_t check_full_line(const uint8_t* board, int width, uint8_t row) {
-	for (int col = 0; col < width; ++col) {
-		if (!xy_get(board, width, row, col)) {
+uint8_t check_full_line(const uint8_t* board, int width, uint8_t row) { 
+	for (int col = 0; col < width; ++col) { if (!xy_get(board, width, row, col)) {
 			return 0;
 		}
 	}
@@ -62,7 +56,21 @@ int get_full_lines(const uint8_t* board, int width, int height, uint8_t* lines) 
 }
 
 void clear_lines(uint8_t* board, int width, int height, const uint8_t* lines) {
-
+	int bRow = height - 1;
+	for (int dstRow = height-1; dstRow >= 0; --dstRow) {
+		while (bRow > 0 && lines[bRow]) {
+			--bRow;
+		}
+		if (bRow < 0) {
+			memset((board + dstRow * width), 0, width);
+		}
+		else {
+			if (bRow != dstRow) {
+				memcpy((board + dstRow * width), (board + bRow * width), width);
+			}
+			--bRow;
+		}
+	}
 }
 
 bool validMove(PieceState* piece, const uint8_t* board, int width, int height) {
@@ -129,6 +137,15 @@ bool drop_piece(GameState* game) {
 	return true;
 }
 
+void update_clear_lines(GameState* gState) {
+	if (gState->time >= gState->clear_lines_time) {
+		clear_lines(gState->board, WIDTH, HEIGHT, gState->full_lines);
+		gState->line_count += gState->lines_to_clear;
+		gState->score += gState->point_values[gState->lines_to_clear];
+		gState->phase = GamePhase::GAME_PHASE_PLAYING;
+	}
+}
+
 void update_gameplay(GameState* gState, const InputState* input) {
 	PieceState pState = gState->pieceState;
 
@@ -156,12 +173,23 @@ void update_gameplay(GameState* gState, const InputState* input) {
 	while (gState->time >= gState->next_drop_time) {
 		drop_piece(gState);
 	}
+
+	gState->lines_to_clear = get_full_lines(gState->board, WIDTH, HEIGHT, gState->full_lines);
+
+	if (gState->lines_to_clear > 0) {
+		gState->phase = GamePhase::GAME_PHASE_LINE;
+		gState->clear_lines_time = gState->time + 0.2f;
+	}
 }
 
 void update_game(GameState* gState, const InputState* input) {
 	switch (gState->phase) {
-	case GAME_PHASE_PLAYING:
-		return update_gameplay(gState, input);
+	case GamePhase::GAME_PHASE_PLAYING:
+		update_gameplay(gState, input);
+		break;
+	case GamePhase::GAME_PHASE_LINE:
+		update_clear_lines(gState);
+		break;
 	}
 }
 

@@ -85,17 +85,25 @@ struct PieceState {
 	int rotation;
 };
 
-enum GamePhase {
-	GAME_PHASE_PLAYING
+enum struct GamePhase {
+	GAME_PHASE_PLAYING,
+	GAME_PHASE_LINE
 };
 
 struct GameState {
 	uint8_t board[WIDTH * HEIGHT];
+	uint8_t full_lines[HEIGHT];
 	PieceState pieceState;
 	GamePhase phase;
+	int score;
+	// Points for 0,1,2,3,4 lines cleared
+	int point_values[5] = { 0, 40, 100, 300, 1200 };
+	int line_count;
+	int lines_to_clear;
 
 	double time;
 	double next_drop_time;
+	double clear_lines_time;
 };
 
 // Get value from 1D array based on (x,y) coordinates
