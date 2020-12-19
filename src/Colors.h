@@ -20,7 +20,8 @@ color(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
     return result;
 }
 
-const Color GRID_OUTLINE = color(0xD2, 0xD2, 0xD2, 0xFF);
+const Color GRID_COLOR = color(0x12, 0x12, 0x12, 0xFA);
+const Color GRID_OUTLINE = color(0x4D, 0x4D, 0x4D, 0xD1);
 
 const Color BASE_COLORS[] = {
     color(0x28, 0x28, 0x28, 0xFF),

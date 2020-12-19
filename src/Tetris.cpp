@@ -35,10 +35,24 @@ uint8_t tetromino_get(const Tetromino* t, int x, int y, int rotation) {
 	}
 	return 0;
 }
- int random_int(int min, int max) { int range = max - min; return min + rand() % range; }
+
+int random_int(int min, int max) { 
+	int range = max - min;
+	return min + rand() % range;
+}
 
 uint8_t check_full_line(const uint8_t* board, int width, uint8_t row) { 
-	for (int col = 0; col < width; ++col) { if (!xy_get(board, width, row, col)) {
+	for (int col = 0; col < width; ++col) { 
+		if (!xy_get(board, width, row, col)) {
+			return 0;
+		}
+	}
+	return 1;
+}
+
+uint8_t check_empty_line(const uint8_t* board, int width, uint8_t row) { 
+	for (int col = 0; col < width; ++col) { 
+		if (xy_get(board, width, row, col)) {
 			return 0;
 		}
 	}
@@ -137,6 +151,26 @@ bool drop_piece(GameState* game) {
 	return true;
 }
 
+void update_game_start(GameState* gState, const InputState* input)
+{
+	if (input->dbtn1 > 0)
+	{
+		memset(gState->board, 0, WIDTH * HEIGHT);
+		gState->line_count = 0;
+		gState->score = 0;
+		spawn_piece(gState);
+		gState->phase = GamePhase::GAME_PHASE_PLAYING;
+	}
+}
+
+void update_game_over(GameState* gState, const InputState* input)
+{
+	if (input->dbtn1 > 0)
+	{
+		gState->phase = GamePhase::GAME_PHASE_START;
+	}
+}
+
 void update_clear_lines(GameState* gState) {
 	if (gState->time >= gState->clear_lines_time) {
 		clear_lines(gState->board, WIDTH, HEIGHT, gState->full_lines);
@@ -178,7 +212,12 @@ void update_gameplay(GameState* gState, const InputState* input) {
 
 	if (gState->lines_to_clear > 0) {
 		gState->phase = GamePhase::GAME_PHASE_LINE;
-		gState->clear_lines_time = gState->time + 0.2f;
+		gState->clear_lines_time = gState->time + 0.1f;
+	}
+
+	// It's game over when the two invisible rows are filled
+	if (!check_empty_line(gState->board, WIDTH, HEIGHT - PLAYABLE_HEIGHT)) {
+		gState->phase = GamePhase::GAME_PHASE_OVER;
 	}
 }
 
@@ -189,6 +228,12 @@ void update_game(GameState* gState, const InputState* input) {
 		break;
 	case GamePhase::GAME_PHASE_LINE:
 		update_clear_lines(gState);
+		break;
+	case GamePhase::GAME_PHASE_OVER:
+		update_game_over(gState, input);
+		break;
+	case GamePhase::GAME_PHASE_START:
+		update_game_start(gState, input);
 		break;
 	}
 }

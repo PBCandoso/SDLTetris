@@ -86,8 +86,16 @@ struct PieceState {
 };
 
 enum struct GamePhase {
+	GAME_PHASE_START,
 	GAME_PHASE_PLAYING,
-	GAME_PHASE_LINE
+	GAME_PHASE_LINE,
+	GAME_PHASE_OVER,
+};
+
+enum struct TextAlign {
+	TEXT_ALIGN_LEFT,
+	TEXT_ALIGN_RIGHT,
+	TEXT_ALIGN_CENTER
 };
 
 struct GameState {
